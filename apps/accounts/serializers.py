@@ -35,20 +35,32 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        email = attrs.get("email")
+        # 0. Clean input (very important for AWS/Postgres issues)
+        email = attrs.get("email", "").strip().lower()
         password = attrs.get("password")
 
+        if not email or not password:
+            raise serializers.ValidationError({"detail": "Email and password are required"})
+
+        # 1. Try standard Django authentication (try both keyword variants just in case)
         user = authenticate(username=email, password=password)
-        
         if not user:
-            # Check if user exists but is inactive to provide better error
+            user = authenticate(email=email, password=password)
+        
+        # 2. Manual fallback if authenticate fails (bypasses potential AUTHENTICATION_BACKENDS configuration issues)
+        if not user:
             try:
+                # Direct check against database using case-insensitive email
                 existing_user = User.objects.get(email__iexact=email)
-                if not existing_user.is_active:
-                    raise serializers.ValidationError({"detail": "User account is disabled"})
+                if existing_user.check_password(password):
+                    if existing_user.is_active:
+                        user = existing_user
+                    else:
+                        raise serializers.ValidationError({"detail": "User account is disabled"})
             except User.DoesNotExist:
                 pass
                 
+        if not user:
             raise serializers.ValidationError(
                 {"detail": "Invalid email or password"}
             )
@@ -60,7 +72,8 @@ class LoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     from apps.products.serializers.user_serializers import ProductSerializer
     from apps.products.models import Product
-    recently_viewed = ProductSerializer(many=True, read_only=True)
+    
+    recently_viewed = serializers.SerializerMethodField()
     recently_viewed_ids = serializers.PrimaryKeyRelatedField(
         many=True, write_only=True, queryset=Product.objects.all(), source='recently_viewed'
     )
@@ -69,6 +82,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "email", "name", "image", "created_at", "is_staff", "recently_viewed", "recently_viewed_ids")
         read_only_fields = ("id", "created_at", "is_staff")
+
+    def get_recently_viewed(self, obj):
+        from apps.products.serializers.user_serializers import ProductSerializer
+        # Filter only active products to avoid serialization errors with soft-deleted or inactive items
+        items = obj.recently_viewed.filter(is_active=True)
+        return ProductSerializer(items, many=True, context=self.context).data
 
     def validate_email(self, value):
         request = self.context.get("request")
