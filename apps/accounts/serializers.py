@@ -36,34 +36,45 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         # 0. Clean input (very important for AWS/Postgres issues)
-        email = attrs.get("email", "").strip().lower()
+        email_in = attrs.get("email", "").strip()
+        email = email_in.lower()
         password = attrs.get("password")
 
         if not email or not password:
             raise serializers.ValidationError({"detail": "Email and password are required"})
 
-        # 1. Try standard Django authentication (try both keyword variants just in case)
+        # 1. Try standard Django authentication
         user = authenticate(username=email, password=password)
-        if not user:
-            user = authenticate(email=email, password=password)
         
-        # 2. Manual fallback if authenticate fails (bypasses potential AUTHENTICATION_BACKENDS configuration issues)
+        # 2. Manual fallback with VERY verbose error reporting for debugging
         if not user:
             try:
-                # Direct check against database using case-insensitive email
-                existing_user = User.objects.get(email__iexact=email)
-                if existing_user.check_password(password):
-                    if existing_user.is_active:
-                        user = existing_user
-                    else:
-                        raise serializers.ValidationError({"detail": "User account is disabled"})
-            except User.DoesNotExist:
-                pass
+                # Try finding the user exactly as entered first
+                existing_user = User.objects.filter(email=email_in).first()
+                if not existing_user:
+                    # Try finding case-insensitive
+                    existing_user = User.objects.filter(email__iexact=email).first()
+                
+                if existing_user:
+                    if not existing_user.check_password(password):
+                        # WRONG PASSWORD
+                        raise serializers.ValidationError({"detail": "Authentication failed: Password mismatch."})
+                    if not existing_user.is_active:
+                        # INACTIVE
+                        raise serializers.ValidationError({"detail": "Authentication failed: User account is disabled."})
+                    
+                    # If we reached here, password is GOOD and user is ACTIVE, but authenticate() still failed
+                    user = existing_user
+                else:
+                    # USER NOT FOUND
+                    raise serializers.ValidationError({"detail": f"Authentication failed: User with email '{email_in}' not found."})
+            
+            except Exception as e:
+                # Catch any DB errors (like MultipleObjectsReturned)
+                raise serializers.ValidationError({"detail": f"Authentication Error: {str(e)}"})
                 
         if not user:
-            raise serializers.ValidationError(
-                {"detail": "Invalid email or password"}
-            )
+            raise serializers.ValidationError({"detail": "Invalid email or password"})
 
         attrs["user"] = user
         return attrs
