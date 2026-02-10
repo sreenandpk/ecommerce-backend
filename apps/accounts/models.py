@@ -14,6 +14,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         upload_to="profiles/",
         default="profiles/default.png",
     )
+    recently_viewed = models.ManyToManyField(
+        "products.Product",
+        blank=True,
+        related_name="viewed_by"
+    )
     objects = UserManager()
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["name"]

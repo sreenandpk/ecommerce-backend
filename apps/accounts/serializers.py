@@ -67,9 +67,16 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    from apps.products.serializers.user_serializers import ProductSerializer
+    from apps.products.models import Product
+    recently_viewed = ProductSerializer(many=True, read_only=True)
+    recently_viewed_ids = serializers.PrimaryKeyRelatedField(
+        many=True, write_only=True, queryset=Product.objects.all(), source='recently_viewed'
+    )
+
     class Meta:
         model = User
-        fields = ("id", "email", "name", "image", "created_at", "is_staff")
+        fields = ("id", "email", "name", "image", "created_at", "is_staff", "recently_viewed", "recently_viewed_ids")
         read_only_fields = ("id", "created_at", "is_staff")
 
     def validate_email(self, value):

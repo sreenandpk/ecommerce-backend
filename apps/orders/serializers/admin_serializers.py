@@ -71,3 +71,10 @@ class AdminOrderSerializer(serializers.ModelSerializer):
             "created_at",
             "items",
         ]
+
+    def validate(self, attrs):
+        if self.instance:
+            new_status = attrs.get('status')
+            if new_status == 'shipped' and not self.instance.is_paid:
+                raise serializers.ValidationError({"status": "Cannot ship an unpaid order."})
+        return attrs
