@@ -56,30 +56,41 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer = LoginSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user = serializer.validated_data["user"]
-        refresh = RefreshToken.for_user(user)
+            user = serializer.validated_data["user"]
+            refresh = RefreshToken.for_user(user)
 
-        response = Response(
-            {
-                "user": AdminUserSerializer(user).data,  # ✅ FIXED
-                "access": str(refresh.access_token),
-            },
-            status=status.HTTP_200_OK,
-        )
+            response = Response(
+                {
+                    "user": AdminUserSerializer(user).data,
+                    "access": str(refresh.access_token),
+                },
+                status=status.HTTP_200_OK,
+            )
 
-        response.set_cookie(
-            key="refresh",
-            value=str(refresh),
-            httponly=True,
-            secure=not settings.DEBUG,
-            samesite="Lax" if settings.DEBUG else "None",
-            path="/",
-        )
+            response.set_cookie(
+                key="refresh",
+                value=str(refresh),
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="Lax" if settings.DEBUG else "None",
+                path="/",
+            )
 
-        return response
+            return response
+        except Exception as e:
+            import traceback
+            return Response(
+                {
+                    "detail": f"CRASH: {str(e)}",
+                    "traceback": traceback.format_exc()
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 # ============================
