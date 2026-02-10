@@ -13,12 +13,16 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # ✅ ADD THIS LINE (SAFE)
+        request.user.recently_viewed.set(
+            request.user.recently_viewed.all()
+        )
+
         serializer = UserProfileSerializer(
             request.user,
             context={"request": request}
         )
         return Response(serializer.data)
-
 
 # ============================
 # PROFILE GET / UPDATE
@@ -28,6 +32,11 @@ class ProfileUpdateView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
+        # ✅ ADD THIS LINE
+        request.user.recently_viewed.set(
+            request.user.recently_viewed.all()
+        )
+
         serializer = UserProfileSerializer(
             request.user,
             context={"request": request}
@@ -35,6 +44,11 @@ class ProfileUpdateView(APIView):
         return Response(serializer.data)
 
     def patch(self, request):
+        # ✅ ADD THIS LINE
+        request.user.recently_viewed.set(
+            request.user.recently_viewed.all()
+        )
+
         serializer = UserProfileSerializer(
             request.user,
             data=request.data,
