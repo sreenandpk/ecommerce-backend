@@ -17,7 +17,7 @@ class UserBasicSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         request = self.context.get("request")
-        if obj.image and request:
+        if obj.image and obj.image.name != "profiles/default.png" and request:
             return request.build_absolute_uri(obj.image.url)
         return None
 
@@ -136,7 +136,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         # Fallback for representation if needed, but DRF ImageField 
         # usually handles absolute URLs if request is in context.
         request = self.context.get("request")
-        if obj.image and request:
+        if obj.image and obj.image.name != "profiles/default.png" and request:
             return request.build_absolute_uri(obj.image.url)
         return None
 
@@ -171,6 +171,6 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         request = self.context.get("request")
-        if obj.image and request:
+        if obj.image and obj.image.name != "profiles/default.png" and request:
             return request.build_absolute_uri(obj.image.url)
         return None
