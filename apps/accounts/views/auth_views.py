@@ -112,10 +112,24 @@ class RefreshView(APIView):
             refresh = RefreshToken(refresh_token)
             access_token = refresh.access_token
 
-            return Response(
+            response = Response(
                 {"access": str(access_token)},
                 status=status.HTTP_200_OK,
             )
+
+            # ✅ ROTATE REFRESH TOKEN COOKIE
+            # Since ROTATE_REFRESH_TOKENS is True, the old token is now blacklisted.
+            # We must update the cookie with the new rotated refresh token.
+            response.set_cookie(
+                key="refresh",
+                value=str(refresh),
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="Lax" if settings.DEBUG else "None",
+                path="/",
+            )
+
+            return response
 
         except TokenError:
             return Response(
