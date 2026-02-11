@@ -3,6 +3,16 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from .models import User
 
+class UserBasicSerializer(serializers.ModelSerializer):
+    """
+    Lightweight serializer for initial auth and 'me' checks.
+    Excludes heavy ManyToMany history fields.
+    """
+    class Meta:
+        model = User
+        fields = ("id", "email", "name", "image", "is_staff", "is_superuser")
+        read_only_fields = ("id", "is_staff", "is_superuser")
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -93,8 +103,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_recently_viewed(self, obj):
         from apps.products.serializers.user_serializers import ProductSerializer
-        # Filter only active products to avoid serialization errors with soft-deleted or inactive items
-        items = obj.recently_viewed.filter(is_active=True)
+        # Limit to 5 items to keep payload size down
+        items = obj.recently_viewed.filter(is_active=True).order_by("-id")[:5]
         return ProductSerializer(items, many=True, context=self.context).data
 
     def validate_email(self, value):
