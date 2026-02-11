@@ -8,10 +8,18 @@ class UserBasicSerializer(serializers.ModelSerializer):
     """
     Lightweight serializer for auth + /me
     """
+    image = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
         fields = ("id", "email", "name", "image", "is_staff", "is_superuser")
         read_only_fields = ("id", "is_staff", "is_superuser")
+
+    def get_image(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
 
 
 # =========================
@@ -89,6 +97,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         source="recently_viewed"
     )
 
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = (
@@ -103,6 +113,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_at", "is_staff")
 
+    def get_image(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
     def get_recently_viewed(self, obj):
         items = obj.recently_viewed.filter(is_active=True).order_by("-id")[:5]
         return self.ProductSerializer(
@@ -116,15 +132,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
 # ADMIN
 # =========================
 class AdminUserSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = (
             "id",
             "email",
             "name",
+            "image",
             "is_active",
             "is_staff",
             "is_superuser",
             "created_at",
         )
         read_only_fields = ("id", "created_at")
+
+    def get_image(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
