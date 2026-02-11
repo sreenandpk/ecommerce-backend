@@ -31,7 +31,7 @@ class RegisterView(generics.CreateAPIView):
 
         response = Response(
             {
-                "user": AdminUserSerializer(user).data,  # ✅ FIXED
+                "user": AdminUserSerializer(user, context={"request": request}).data,  # ✅ FIXED: Added context
                 "access": str(refresh.access_token),
             },
             status=status.HTTP_201_CREATED,
@@ -66,7 +66,7 @@ class LoginView(APIView):
 
             response = Response(
                 {
-                    "user": AdminUserSerializer(user).data,
+                    "user": AdminUserSerializer(user, context={"request": request}).data,  # ✅ FIXED: Added context
                     "access": str(refresh.access_token),
                 },
                 status=status.HTTP_200_OK,

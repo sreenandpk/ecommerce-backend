@@ -20,7 +20,12 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     "13.53.193.159",  # ✅ AWS Backend IP
+    ".amazonaws.com",  # Allow AWS domains
 ]
+
+# ✅ REQUIRED for absolute URLs behind a proxy (AWS)
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # =====================
