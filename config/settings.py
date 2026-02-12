@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY is not set")
 
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = False  # 🔥 MUST be False in production
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -29,45 +29,24 @@ USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # =====================
-# CORS / CSRF
+# CORS / CSRF (FINAL PRODUCTION)
 # =====================
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://13.53.193.159",
-    "http://icecreams.duckdns.org",
+    "https://ecommerce-django-frontend-lhvj.vercel.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://13.53.193.159",
-    "http://icecreams.duckdns.org",
+    "https://ecommerce-django-frontend-lhvj.vercel.app",
 ]
 
-CORS_ALLOW_HEADERS = [
-    "authorization",
-    "content-type",
-    "x-csrftoken",
-]
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
-CORS_ALLOW_METHODS = [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-]
-
-CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SAMESITE = "Lax"
-
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SAMESITE = "None"
 
 # =====================
 # AUTH
@@ -89,11 +68,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
-
     "apps.accounts.apps.AccountsConfig",
     "apps.products.apps.ProductsConfig",
     "apps.wishlist.apps.WishlistConfig",
@@ -139,7 +116,7 @@ TEMPLATES = [
 ]
 
 # =====================
-# DATABASE (Postgres)
+# DATABASE
 # =====================
 DATABASES = {
     "default": {
@@ -151,33 +128,6 @@ DATABASES = {
         "PORT": os.getenv("DB_PORT"),
     }
 }
-
-# =====================
-# PASSWORD VALIDATORS
-# =====================
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
-
-# =====================
-# INTERNATIONALIZATION
-# =====================
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_TZ = True
-
-# =====================
-# STATIC / MEDIA
-# =====================
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
 
 # =====================
 # DRF
@@ -206,17 +156,20 @@ SIMPLE_JWT = {
 
 SIMPLE_JWT.update({
     "AUTH_COOKIE": "refresh",
-    "AUTH_COOKIE_SECURE": False,  # Will change to True after HTTPS
+    "AUTH_COOKIE_SECURE": True,  # 🔥 REQUIRED for HTTPS
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_PATH": "/",
-    "AUTH_COOKIE_SAMESITE": "Lax",
+    "AUTH_COOKIE_SAMESITE": "None",  # 🔥 REQUIRED for cross-domain cookies
 })
 
 # =====================
-# RAZORPAY
+# STATIC / MEDIA
 # =====================
-RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # =====================
 # DEFAULT PK
